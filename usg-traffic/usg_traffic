@@ -106,21 +106,15 @@ fi
 
 snmp_results=`snmpwalk -v3 -l 'authPriv' -a 'SHA' -A '${snmp_password}' -u '${snmp_user}' -x 'AES' -X '${snmp_password}' ${usg_hostname} .iso.3.6.1.2.1.31.1.1.1`
 
+# get traffic, in bytes. Statistics for packets sent/receiveed is pulled just the same way, with only
+# the snmp path being different, "31.1.1.1..7.x" and "31.1.1.1.11.x" for Rx/Tx respectively.
 eth0RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.2" | cut -d " " -f 4`
 eth1RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.3" | cut -d " " -f 4`
 eth2RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.4" | cut -d " " -f 4`
 
-#eth0RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.2" | cut -d " " -f 4`
-#eth1RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.3" | cut -d " " -f 4`
-#eth2RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.4" | cut -d " " -f 4`
-
 eth0TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.2" | cut -d " " -f 4`
 eth1TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.3" | cut -d " " -f 4`
 eth2TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.4" | cut -d " " -f 4`
-
-#eth0TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.2" | cut -d " " -f 4`
-#eth1TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.3" | cut -d " " -f 4`
-#eth2TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.4" | cut -d " " -f 4`
 
 echo "eth0RxBytes.value ${eth0RxBytes}"
 echo "eth2RxBytes.value ${eth2RxBytes}"
@@ -129,12 +123,3 @@ echo "eth1RxBytes.value ${eth1RxBytes}"
 echo "eth0TxBytes.value ${eth0TxBytes}"
 echo "eth2TxBytes.value ${eth2TxBytes}"
 echo "eth1TxBytes.value ${eth1TxBytes}"
-
-#echo "eth0RxPackets.value ${eth0RxPackets}"
-#echo "eth1RxPackets.value ${eth1RxPackets}"
-#echo "eth2RxPackets.value ${eth2RxPackets}"
-
-#echo "eth0TxPackets.value ${eth0TxPackets}"
-#echo "eth1TxPackets.value ${eth1TxPackets}"
-#echo "eth2TxPackets.value ${eth2TxPackets}"
-
