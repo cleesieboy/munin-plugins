@@ -1,0 +1,140 @@
+#!/bin/bash
+# -*- sh -*-
+
+: << =cut
+
+=head1 NAME
+
+usg_traffic - Plugin to monitor (physical) interfaces on a UniFi USG.
+Logs bytes sent/received bytes but can easily be made to also log packets.
+
+=head1 APPLICABLE SYSTEMS
+Ubiquiti UniFi USG router, snmpwalk installed.
+
+The following interfaces are expected, on an out-of-the-box USG this should be the case if you
+choose to use the second LAN/WAN port in a WAN configuration, be it fail-over or load balanced, or a
+policy based setup.
+
+ eth0    WAN1
+ eth1    LAN1
+ eth2    WAN2
+
+The Unifi controller won't allow you to choose authentication and privacy protocols for snmp.
+The setting is hardcoded: SHA for auth and AES-128 for priv.
+
+=head1 CONFIGURATION
+It's assumed snmp v3 has been enabled on the UniFi controller. Set user and password as shown.
+Also configure the address to the USG and the path to the snmpwalk executable.
+
+The following environment variables need to be configured:
+
+  [usg_traffic]
+     env.usg_hostname x.x.x.x     (default: 192.168.1.1)
+     env.snmp_user
+     env.snpm_password
+     env.snmpwalk_path            (default: /usr/bin/snmpwalk)
+
+=head1 INTERPRETATION
+
+=head1 BUGS
+
+Probably.
+
+=head1 AUTHOR
+
+Joakim Olsen <joakim.olsen@pm.me>
+
+=head1 LICENSE
+
+GPLv2
+
+=head1 VERSION
+1.0.20220313
+
+=head1 MAGIC MARKERS
+
+ #%# family=auto
+ #%# capabilities=autoconf
+
+=cut
+
+. "$MUNIN_LIBDIR/plugins/plugin.sh"
+
+snmp_user=${snmp_user:-}
+snmp_password=${snmp_password:-}
+usg_address=${usg_address:-192.168.1.1}
+snmpwalk_path=${snmp_file:-/usr/bin/snmpwalk}
+
+if [ "$1" = "autoconf"]; then
+  if $snmpwalk_path; then
+    echo "yes"
+  else
+    echo "no (could not locate or execute snmpwalk)"
+  fi
+fi
+
+if [ "$1" = "config" ]; then
+  echo "graph_title USG Traffic, ${usg_hostname}"
+  echo "graph_args --base 1000"
+  echo "graph_category network"
+  echo "graph_vlabel bytes in (-) / out (+)"
+
+  echo "eth0RxBytes.label WAN1 RX bytes"
+  echo "eth0RxBytes.type COUNTER"
+  echo "eth2RxBytes.label WAN2 RX bytes"
+  echo "eth2RxBytes.type COUNTER"
+  echo "eth1RxBytes.label LAN1 RX bytes"
+  echo "eth1RxBytes.type COUNTER"
+
+  echo "eth0TxBytes.label WAN1"
+  echo "eth0TxBytes.type COUNTER"
+  echo "eth2TxBytes.label WAN2"
+  echo "eth2TxBytes.type COUNTER"
+  echo "eth1TxBytes.label LAN1"
+  echo "eth1TxBytes.type COUNTER"
+
+  echo "eth0RxBytes.graph no"
+  echo "eth2RxBytes.graph no"
+  echo "eth1RxBytes.graph no"
+  echo "eth0TxBytes.negative eth0RxBytes"
+  echo "eth2TxBytes.negative eth2RxBytes"
+  echo "eth1TxBytes.negative eth1RxBytes"
+  exit 0
+fi
+
+
+
+snmp_results=`snmpwalk -v3 -l 'authPriv' -a 'SHA' -A '${snmp_password}' -u '${snmp_user}' -x 'AES' -X '${snmp_password}' ${usg_hostname} .iso.3.6.1.2.1.31.1.1.1`
+
+eth0RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.2" | cut -d " " -f 4`
+eth1RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.3" | cut -d " " -f 4`
+eth2RxBytes=`echo "${snmp_results}" | grep "31.1.1.1.6.4" | cut -d " " -f 4`
+
+#eth0RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.2" | cut -d " " -f 4`
+#eth1RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.3" | cut -d " " -f 4`
+#eth2RxPackets=`cat ${snmp_file} | grep "31.1.1.1.7.4" | cut -d " " -f 4`
+
+eth0TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.2" | cut -d " " -f 4`
+eth1TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.3" | cut -d " " -f 4`
+eth2TxBytes=`echo "${snmp_results}" | grep "31.1.1.1.10.4" | cut -d " " -f 4`
+
+#eth0TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.2" | cut -d " " -f 4`
+#eth1TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.3" | cut -d " " -f 4`
+#eth2TxPackets=`cat ${snmp_file} | grep "31.1.1.1.11.4" | cut -d " " -f 4`
+
+echo "eth0RxBytes.value ${eth0RxBytes}"
+echo "eth2RxBytes.value ${eth2RxBytes}"
+echo "eth1RxBytes.value ${eth1RxBytes}"
+
+echo "eth0TxBytes.value ${eth0TxBytes}"
+echo "eth2TxBytes.value ${eth2TxBytes}"
+echo "eth1TxBytes.value ${eth1TxBytes}"
+
+#echo "eth0RxPackets.value ${eth0RxPackets}"
+#echo "eth1RxPackets.value ${eth1RxPackets}"
+#echo "eth2RxPackets.value ${eth2RxPackets}"
+
+#echo "eth0TxPackets.value ${eth0TxPackets}"
+#echo "eth1TxPackets.value ${eth1TxPackets}"
+#echo "eth2TxPackets.value ${eth2TxPackets}"
+

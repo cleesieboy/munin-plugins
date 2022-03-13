@@ -1,0 +1,5 @@
+[usg_traffic]
+user root
+env.snmp_user unifi_snmp
+env.snmp_password xxxxx
+env.usg_hostname 192.168.1.1
