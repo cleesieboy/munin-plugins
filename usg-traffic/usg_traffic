@@ -6,7 +6,7 @@
 =head1 NAME
 
 usg_traffic - Plugin to monitor (physical) interfaces on a UniFi USG.
-Logs bytes sent/received bytes but can easily be made to also log packets.
+Logs sent/received bytes but can easily be made to also log packets.
 
 =head1 APPLICABLE SYSTEMS
 Ubiquiti UniFi USG router, snmpwalk installed.
@@ -65,7 +65,13 @@ snmp_password=${snmp_password:-}
 usg_address=${usg_address:-192.168.1.1}
 snmpwalk_path=${snmp_file:-/usr/bin/snmpwalk}
 
-if [ "$1" = "autoconf"]; then
+echo "${snmp_user}"
+echo "${snmp_password}"
+echo "${usg_address}"
+echo "${snmpwalk_path}"
+
+echo
+if [ "$1" = "autoconf" ]; then
   if $snmpwalk_path; then
     echo "yes"
   else
@@ -102,9 +108,7 @@ if [ "$1" = "config" ]; then
   exit 0
 fi
 
-
-
-snmp_results=`snmpwalk -v3 -l 'authPriv' -a 'SHA' -A '${snmp_password}' -u '${snmp_user}' -x 'AES' -X '${snmp_password}' ${usg_hostname} .iso.3.6.1.2.1.31.1.1.1`
+snmp_results=`${snmpwalk_path} -v3 -l "authPriv" -a "SHA" -A "${snmp_password}" -u "${snmp_user}" -x "AES" -X "${snmp_password}" ${usg_hostname} ".iso.3.6.1.2.1.31.1.1.1"`
 
 # get traffic, in bytes. Statistics for packets sent/receiveed is pulled just the same way, with only
 # the snmp path being different, "31.1.1.1..7.x" and "31.1.1.1.11.x" for Rx/Tx respectively.
